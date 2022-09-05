@@ -56,14 +56,12 @@
 				stroke("white");
 				if (poses[0]) {
 					try {
-						if (poses[0].pose.rightAnkle) {
+						if (poses[0].pose.rightAnkle.confidence > 0.8) {
 							pointA = poses[0].pose.rightAnkle;
 							pointB = poses[0].pose.leftAnkle;
 						}
-						if (pointA.confidence + pointB.confidence > 1.4) {
-							center = (pointA.x + pointB.x) / 2;
-							line(center - line_size, pointA.y, center + line_size, pointA.y);
-						}
+						center = (pointA.x + pointB.x) / 2;
+						line(center - line_size, pointA.y, center + line_size, pointA.y);
 					} catch (err) {
 						console.log(err);
 					}
