@@ -4,17 +4,91 @@
 		<script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
 		<script>
-			let video;
-			let poseNet;
-
-			function setup() {
-				createCanvas(500, 500);
-				video = createCapture(VIDEO);
-
-				const bodypix = ml5.bodyPix();
+			let poses = [];
+			let a = 1;
+			let ball;
+			let ball_size = 20;
+			let line_size = 30;
+			let score = 0;
+			let pointA;
+			let pointB;
+			let center;
+			function Ball(x, y) {
+				return {
+					speed: 5,
+					x,
+					y,
+					fall() {
+						this.y += this.speed;
+					},
+				};
 			}
 
-			function draw() {}
+			function setup() {
+				ball = Ball(Math.floor(Math.random() * windowWidth), 0);
+				createCanvas(windowWidth, windowHeight);
+				video = createCapture(VIDEO, videoReady);
+				video.hide();
+				video.size(width, height);
+			}
+
+			function videoReady() {
+				const poseNet = ml5.poseNet(video, modelLoaded);
+
+				// When the model is loaded
+				function modelLoaded() {
+					console.log("Model Loaded!");
+				}
+				// Listen to new 'pose' events
+				poseNet.on("pose", (results) => {
+					poses = results;
+					if (a == 1) {
+						console.log(poses);
+					}
+					a += 1;
+				});
+			}
+
+			function draw() {
+				background(0);
+				image(video, 0, 0, width, height);
+				strokeWeight(10);
+				stroke("white");
+				if (poses[0]) {
+					try {
+						if (poses[0].pose.rightAnkle) {
+							pointA = poses[0].pose.rightAnkle;
+							pointB = poses[0].pose.leftAnkle;
+						}
+						if (pointA.confidence + pointB.confidence > 1.4) {
+							center = (pointA.x + pointB.x) / 2;
+							line(center - line_size, pointA.y, center + line_size, pointA.y);
+						}
+					} catch (err) {
+						console.log(err);
+					}
+				}
+
+				if (ball.y > windowHeight) {
+					ball = Ball(Math.random() * windowWidth, 0);
+				}
+
+				if (
+					ball.y >= pointA?.y - 10 &&
+					ball.y < pointA.y + 10 &&
+					ball.x > center - line_size &&
+					ball.x < center + line_size
+				) {
+					console.log("ball in line");
+					score += 1;
+					ball.y = 0;
+					ball.x = Math.random() * windowWidth;
+				}
+				circle(ball.x, ball.y, ball_size);
+				ball.fall();
+				textSize(32);
+				text(`Score:${score}`, 10, 30);
+			}
 		</script>
 	</head>
 	<body>
